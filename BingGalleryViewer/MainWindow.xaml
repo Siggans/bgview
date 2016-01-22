@@ -25,6 +25,15 @@
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.AnimatedTabControl.xaml" />
 				<ResourceDictionary Source="/Resources/Icons.xaml" />
 			</ResourceDictionary.MergedDictionaries>
+			<Style x:Key="TextBlockLinkStyle" TargetType="{x:Type TextBlock}">
+				<Setter Property="Foreground" Value="Blue" />
+				<Style.Triggers>
+					<Trigger Property="IsMouseOver" Value="True">
+						<Setter Property="Cursor" Value="Hand" />
+						<Setter Property="Foreground" Value="LightBlue" />
+					</Trigger>
+				</Style.Triggers>
+			</Style>
 		</ResourceDictionary>
 	</Window.Resources>
 	<i:Interaction.Behaviors>
@@ -47,7 +56,7 @@
 				<Grid Margin="100, 50">
 					<StackPanel>
 						<TextBlock FontSize="16" FontWeight="Bold">Bing Gallery Viewer</TextBlock>
-						<TextBlock Margin="12,0">Version 0</TextBlock>
+						<TextBlock>Version 0</TextBlock>
 						<TextBlock></TextBlock>
 						<TextBlock Margin="12">
 							This is a small program that will talk with Bing and download its image to your computer.<LineBreak/>
@@ -70,11 +79,16 @@
 						<TextBlock/>
 						<StackPanel Orientation="Horizontal">
 							<TextBlock>	Icon art is designed by uiconstock (</TextBlock>
-							<TextBlock FontStyle="Italic" Foreground="Blue">http://uiconstock.com</TextBlock>
+							<TextBlock Style="{StaticResource TextBlockLinkStyle}" MouseLeftButtonDown="IconLink_Clicked">http://uiconstock.com</TextBlock>
 							<TextBlock>)</TextBlock>
 						</StackPanel>
 						<TextBlock/>
-						<TextBlock HorizontalAlignment="Right">Programmed by Alex Kuo. All Rights Reserved.</TextBlock>
+						<TextBlock>Programmed by Alex Kuo. All Rights Reserved.</TextBlock>
+						<StackPanel Orientation="Horizontal">
+							<TextBlock>Source Code: </TextBlock>
+							<TextBlock Style="{StaticResource TextBlockLinkStyle}" MouseLeftButtonDown="IconLink_Clicked">https://github.com/Siggans/bgview/</TextBlock>
+						</StackPanel>
+						
 					</StackPanel>
 				</Grid>
 

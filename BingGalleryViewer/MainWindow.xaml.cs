@@ -105,5 +105,14 @@ namespace BingGalleryViewer
 				this.GalleryView.CurrentCalendarTime = dateTime;
 			}
 		}
+
+		private void IconLink_Clicked(object sender, MouseButtonEventArgs e)
+		{
+			var txtBlock = sender as TextBlock;
+			if(txtBlock!=null)
+			{
+				System.Diagnostics.Process.Start(txtBlock.Text);
+			}
+		}
 	}
 }
