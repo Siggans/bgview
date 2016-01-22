@@ -1,0 +1,84 @@
+﻿<Controls:MetroWindow
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d" x:Class="BingGalleryViewer.MainWindow"
+	xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+	xmlns:bgvView ="clr-namespace:BingGalleryViewer.View"
+	xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+	xmlns:Behaviours="clr-namespace:MahApps.Metro.Behaviours;assembly=MahApps.Metro"
+	Title="Bing Gallery Viewer" Height="600" Width="800" SnapsToDevicePixels="True"
+	ResizeMode="CanMinimize"
+	ShowMinButton="True"
+	ShowMaxRestoreButton="False"
+	BorderBrush="{DynamicResource AccentColorBrush}"
+	GlowBrush="Black"
+	BorderThickness="2" 
+	Closing="MainWindow_Closing"
+	Loaded="MainWindow_Loaded"
+	Icon="Resources/Uiconstock-Socialmedia-Bing.ico"
+>
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.AnimatedTabControl.xaml" />
+				<ResourceDictionary Source="/Resources/Icons.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Window.Resources>
+	<i:Interaction.Behaviors>
+		<Behaviours:BorderlessWindowBehavior />
+	</i:Interaction.Behaviors>
+	<Grid HorizontalAlignment="Stretch"  VerticalAlignment="Stretch" >
+		<!-- width=800, height=530.52666667  pic frame for 16:9 = 800x425 -->
+		<TabControl x:Name="TabMenu" >
+			<TabItem Header="Bing Gallery">
+				<bgvView:GalleryView x:Name="GalleryView" />
+			</TabItem>
+			<TabItem Header="Calendar">
+				<bgvView:CalendarView />
+			</TabItem>
+			<TabItem Header="Setting">
+				<bgvView:SettingView />
+			</TabItem>
+			<TabItem Header="About">
+
+				<Grid Margin="100, 50">
+					<StackPanel>
+						<TextBlock FontSize="16" FontWeight="Bold">Bing Gallery Viewer</TextBlock>
+						<TextBlock Margin="12,0">Version 0</TextBlock>
+						<TextBlock></TextBlock>
+						<TextBlock Margin="12">
+							This is a small program that will talk with Bing and download its image to your computer.<LineBreak/>
+							It is free for personal use and provided as is.  Limited support may be requested via bug filing
+						</TextBlock>
+						<TextBlock></TextBlock>
+						<TextBlock>This program is written in .Net 4.5 in C#, with Windows Presentation Foundation (WPF)</TextBlock>
+						<TextBlock Margin="0,10,0,5">Components:</TextBlock>
+						<Border BorderBrush="DarkGray" BorderThickness="1" Margin="10,0" Padding="5,3,0,5">
+							<TextBlock>
+								MahApps.Metro  v1.2.1-ALPHA001<LineBreak />
+								MahApps.Metro.Resources  v0.4.0.0<LineBreak />
+								Microsoft.Windows.Shell  v3.0.1.0<LineBreak />
+								Microsoft.WindowsAPICodePack.Core  v1.1.0<LineBreak />
+								Microsoft.WindowsAPICodePack.Shell  v1.1.0<LineBreak />
+								System.Data.SQLite.Core (x86/x64)  v1.0.99.0
+							</TextBlock>
+						</Border>
+						<TextBlock Margin="0,20,0,0">Bing is a Trademark of Microsoft</TextBlock>
+						<TextBlock/>
+						<StackPanel Orientation="Horizontal">
+							<TextBlock>	Icon art is designed by uiconstock (</TextBlock>
+							<TextBlock FontStyle="Italic" Foreground="Blue">http://uiconstock.com</TextBlock>
+							<TextBlock>)</TextBlock>
+						</StackPanel>
+						<TextBlock/>
+						<TextBlock HorizontalAlignment="Right">Programmed by Alex Kuo. All Rights Reserved.</TextBlock>
+					</StackPanel>
+				</Grid>
+
+			</TabItem>
+		</TabControl>
+	</Grid>
+</Controls:MetroWindow>

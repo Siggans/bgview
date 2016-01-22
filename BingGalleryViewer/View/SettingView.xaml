@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="BingGalleryViewer.View.SettingView"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+			 xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+			 mc:Ignorable="d" 
+			 d:DesignHeight="531" d:DesignWidth="800"
+			 Background="White">
+	<UserControl.Resources>
+		<Style x:Key="StackPanelRow" TargetType="{x:Type StackPanel}">
+			<Setter Property="Margin" Value="0,30,0,10" />
+			<Setter Property="Orientation" Value="Horizontal" />
+		</Style>
+		<Style x:Key="StackPanelGroupedRowOuter" TargetType="{x:Type StackPanel}" BasedOn="{StaticResource StackPanelRow}">
+			<Setter Property="Orientation" Value="Vertical" />
+		</Style>
+		<Style x:Key="StackPanelGroupedRow" TargetType="{x:Type StackPanel}" BasedOn="{StaticResource StackPanelRow}">
+			<Setter Property="Margin" Value="0,20,0,0" />
+		</Style>
+		<Style x:Key="DimmableTextBlock" TargetType="{x:Type TextBlock}">
+			<Style.Triggers>
+				<Trigger Property="IsEnabled" Value="False">
+					<Setter Property="Foreground" Value="Gray" />
+				</Trigger>
+			</Style.Triggers>
+		</Style>
+	</UserControl.Resources>
+	<Grid x:Name="ContentHost" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Height="531" Width="800">
+		<StackPanel Margin="100, 50" Orientation="Vertical">
+			<StackPanel Style="{StaticResource StackPanelRow}" Width="600">
+				<DockPanel Width="600">
+					<Label DockPanel.Dock="Left">Storage Location</Label>
+					<Button DockPanel.Dock="Right" Style="{DynamicResource SquareButtonStyle}"
+							IsEnabled="{Binding Path=UseCache, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+							Click="Browse_Click">
+						Browse
+					</Button>
+					<TextBox x:Name="CachePathDisplay" IsReadOnly="True" Margin="5,0" HorizontalAlignment="Stretch" 
+							 Text="{Binding Path=CachePath,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+							 IsEnabled="{Binding Path=UseCache, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+							 />
+				</DockPanel>
+			</StackPanel>
+			<StackPanel Style="{StaticResource StackPanelGroupedRowOuter}" >
+				<StackPanel Style="{StaticResource StackPanelGroupedRow}">
+					<CheckBox  Margin="5,0" IsChecked="{Binding Path=UseCache,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"/>
+					<TextBlock>Store Images on Disk</TextBlock>
+				</StackPanel>
+				<StackPanel Style="{StaticResource StackPanelGroupedRow}" >
+					<Grid Width="40" />
+					<CheckBox Margin="5,0" IsChecked="{Binding Path=UseCacheHd,UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}"
+							  IsEnabled="{Binding Path=UseCache, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" />
+					<TextBlock Style="{StaticResource DimmableTextBlock}" IsEnabled="{Binding Path=UseCache, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}" >
+						Store High Quality Images on Disk
+					</TextBlock>
+				</StackPanel>
+			</StackPanel>
+		</StackPanel>
+
+	</Grid>
+</UserControl>
