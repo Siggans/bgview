@@ -17,7 +17,7 @@ using BingGalleryViewer.Utility.SQLite;
 
 namespace BingGalleryViewer.Model
 {
-	internal class ModelManager
+	internal partial class ModelManager
 	{
 		public delegate void RangedQueryIndivisualResultCallback(DateTime date, bool isSuccess, string path);
 
@@ -61,7 +61,7 @@ namespace BingGalleryViewer.Model
 
 					if (minDate < today)
 					{
-						var infos = InitializeAsyncAcquireMissingInfos(ref today, ref minDate);
+						var infos = InitializeAsync_AcquireMissingInfos(ref today, ref minDate);
 						await store.SaveDatesAsync(infos);
 					}
 
@@ -77,14 +77,14 @@ namespace BingGalleryViewer.Model
 			};
 		}
 
-		private static BingImageInfo[] InitializeAsyncAcquireMissingInfos(ref DateTime anchorDate, ref DateTime minDate, int retry = 0)
+		#region InitializeAsync Helper
+		private static BingImageInfo[] InitializeAsync_AcquireMissingInfos(ref DateTime anchorDate, ref DateTime minDate, int retry = 0)
 		{
 			if (retry > 3) return new BingImageInfo[0];
 
 			var set = new SortedSet<BingImageInfo>(new BingImageInfo.Comparer());
-			var startOffset = 0;
-			var countOffset = 8;
-			var startOffsetMax = (anchorDate - minDate).Days;
+			int startOffset = 0, countOffset = 8;
+			int startOffsetMax = (anchorDate - minDate).Days;
 			bool isDateShifted = false;
 			while (startOffset <= startOffsetMax)
 			{
@@ -123,10 +123,10 @@ namespace BingGalleryViewer.Model
 				startOffset += count;
 			}
 
-			if (isDateShifted && !InitializeAsyncAcquireMissingInfosTryShiftDate(ref anchorDate, set))
+			if (isDateShifted && !InitializeAsync_AcquireMissingInfos_TryShiftDate(ref anchorDate, set))
 			{
 				// something weird happened. let's requery bing image and hope for best.
-				return InitializeAsyncAcquireMissingInfos(ref anchorDate, ref minDate, retry + 1);
+				return InitializeAsync_AcquireMissingInfos(ref anchorDate, ref minDate, retry + 1);
 			}
 
 			if (set.Count() != 0)
@@ -138,7 +138,8 @@ namespace BingGalleryViewer.Model
 			return set.ToArray();
 		}
 
-		private static bool InitializeAsyncAcquireMissingInfosTryShiftDate(ref DateTime anchorDate, SortedSet<BingImageInfo> set)
+
+		private static bool InitializeAsync_AcquireMissingInfos_TryShiftDate(ref DateTime anchorDate, SortedSet<BingImageInfo> set)
 		{
 			// let's see if we need to reanchor
 			var infos = BingDailyImage.RequestImages(0, 1);
@@ -156,9 +157,11 @@ namespace BingGalleryViewer.Model
 					}
 					else return false; // shift unsuccessful
 				}
+				return true;
 			}
-			return true;
+			return false;
 		}
+		#endregion InitializeAsync Helper
 
 		public static async Task<BingImageInfo> RequestImageInfoAsync(DateTime date)
 		{
@@ -169,6 +172,7 @@ namespace BingGalleryViewer.Model
 
 		public static async Task<BingImageInfo[]> RequestImageInfosAsync(DateTime date1, DateTime date2)
 		{
+
 			if (!IsInitialized) throw new InvalidOperationException("Not initialized");
 			return await _readonlyStore.ReadImageInfosAsync(date1, date2);
 		}
@@ -184,8 +188,11 @@ namespace BingGalleryViewer.Model
 		}
 
 		private static RangeRequestInfo _currentRangeRequestInfo = null;
-		public static async void StartRequestImagePathForCalendar(IEnumerable<DateTime> list, RangedQueryIndivisualResultCallback handler)
+		public static async Task StartRequestImagePathForCalendarAsync(IEnumerable<DateTime> list, RangedQueryIndivisualResultCallback handler)
 		{
+
+			if (!IsInitialized) throw new InvalidOperationException("Not initialized");
+
 			if (list == null) throw new ArgumentNullException("list");
 			if (handler == null) throw new ArgumentNullException("handler");
 			var currentRangeInfo = _currentRangeRequestInfo;
@@ -225,10 +232,13 @@ namespace BingGalleryViewer.Model
 						}
 					}
 				}
-				llist.Clear(); // don't care about thread endstats;
+				await Task.WhenAll(llist);
 			}
 		}
 
+		#region request helpers
+
+		#region gallery request starter
 		private static object galleryRequestLock = new object();
 		private static int galleryRequestCount = 0;
 		private static WebRequest galleryRequest;
@@ -237,110 +247,148 @@ namespace BingGalleryViewer.Model
 		private static async Task<string> RequestImagePathForGalleryStartRequestAsync(BingImageInfo info)
 		{
 			string path = null;
-			if (RequestImagePathCheckCache(info.StartDate, out path))
-				return path;
+			DateTime date;
+			Trace.WriteLine("Started for " + info.StartDate, "ModelManager().RequestImagePathForGalleryStartRequestAsync");
+			if (!BingDataHelper.TryConvertStartdate(info.StartDate, out date)) return null;
 
-			galleryRequestToken = info.StartDate; // sets the token for latest date
-
-			while (true)
-			{
-				lock (galleryRequestLock)
-				{
-					if (galleryRequestCount == 0) { galleryRequestCount++; break; }
-				}
-				if (galleryRequestToken != info.StartDate) return null; // only keep looping if we are the latest request
-				var request = galleryRequest;
-				if (request != null) request.Abort();
-				await Task.Yield();
-			}
-
+			await IOAccessControl.WaitForAccessAsync(date);
 			try
 			{
-				var fileName = info.StartDate + ".jpg";
-				var filePath = Path.Combine(Setting.GetCurrentSetting().TempPath.LocalPath, fileName);
-				if (File.Exists(filePath)) File.Delete(filePath);
+				if (RequestImagePath_TryFindValidImage(info.StartDate, out path))
+					return path;
 
-				// see if we can grab the 1080 source.  if failed, try to get the 1366 source
-				if (await RequestImagePathTryBingApiAsync(new Uri(BingBaseUri, info.Url), filePath)
-					|| await RequestImagePathTryBingApiAsync(new Uri(BingBaseUri, info.UrlBase + "_1366x768.jpg"), filePath))
+				galleryRequestToken = info.StartDate; // sets the token for latest date
+
+				while (true)
 				{
-					if (RequestImagePathCheckCache(info.StartDate, out path))
-						return path;
+					lock (galleryRequestLock)
+					{
+						if (galleryRequestCount == 0) { galleryRequestCount++; break; }
+					}
+					if (galleryRequestToken != info.StartDate) return null; // only keep looping if we are the latest request
+					var request = galleryRequest;
+					if (request != null) request.Abort();
+					await Task.Yield();
 				}
 
+				try
+				{
+					var fileName = info.StartDate + ".jpg";
+					var filePath = Path.Combine(Setting.GetCurrentSetting().TempPath.LocalPath, fileName);
+					if (File.Exists(filePath)) File.Delete(filePath);
+
+					// see if we can grab the 1080 source.  if failed, try to get the 1366 source
+					if (await RequestImagePath_TryBingApiAsync(new Uri(BingBaseUri, info.Url), filePath))
+					{
+						if (RequestImagePath_TryFindValidImage(info.StartDate, out path))
+							return path;
+					}
+					else if (!info.Url.ToLower().EndsWith("_1366x768.jpg"))
+					{
+						if (await RequestImagePath_TryBingApiAsync(new Uri(BingBaseUri, info.UrlBase + "_1366x768.jpg"), filePath))
+						{
+							if (RequestImagePath_TryFindValidImage(info.StartDate, out path))
+								return path;
+						}
+					}
+
+				}
+				finally
+				{
+					galleryRequest = null;
+
+					Debug.Assert(galleryRequestCount == 1);
+
+					galleryRequestCount--;
+
+				}
+				return null;
 			}
 			finally
 			{
-				galleryRequest = null;
-
-				Debug.Assert(galleryRequestCount == 1);
-				galleryRequestCount--;
-
+				IOAccessControl.ReleaseAccess(date);
 			}
-			return null;
 		}
 
-		private static SemaphoreSlim calendarRequestSemaphore = new SemaphoreSlim(0, MaxDaysConnection);
+		#endregion gallery request starter
+
+		#region calendar request starter
+		private static SemaphoreSlim calendarRequestSemaphore = new SemaphoreSlim(MaxDaysConnection);
 		private static async Task RequestImagePathForCalendarStartRequestAsync(BingImageInfo info, RangeRequestInfo rangeInfo)
 		{
 			DateTime date;
 			string path = null;
-			Debug.WriteLine("Task for " + info.StartDate + " started");
+			Trace.WriteLine("Started for " + info.StartDate, "ModelManager().RequestImagePathForCalendarStartRequestAsync");
 			if (!BingDataHelper.TryConvertStartdate(info.StartDate, out date))
 			{
 				rangeInfo.Callback(date, false, null);
 				return;
 			}
 
-			if (RequestImagePathCheckCache(info.StartDate, out path))
-			{
-				rangeInfo.Callback(date, true, path);
-				return;
-			}
-
-			await calendarRequestSemaphore.WaitAsync();
+			await IOAccessControl.WaitForAccessAsync(date);
 
 			try
 			{
-				if (rangeInfo.IsCancelled) return;
-				var fileName = info.StartDate + ".jpg";
-				var filePath = Path.Combine(Setting.GetCurrentSetting().TempPath.LocalPath, fileName);
-				if (File.Exists(filePath)) File.Delete(filePath);
 
-				// see if we can grab the 1080 source.  if failed, try to get the 1366 source
-				if (await RequestImagePathTryBingApiAsync(new Uri(BingBaseUri, info.Url), date, rangeInfo, filePath))
+				if (RequestImagePath_TryFindValidImage(info.StartDate, out path))
+				{
+					rangeInfo.Callback(date, true, path);
+					return;
+				}
+
+				await calendarRequestSemaphore.WaitAsync();
+
+				try
 				{
 					if (rangeInfo.IsCancelled) return;
-					if (RequestImagePathCheckCache(info.StartDate, out path))
+					var fileName = info.StartDate + ".jpg";
+					var filePath = Path.Combine(Setting.GetCurrentSetting().TempPath.LocalPath, fileName);
+					if (File.Exists(filePath)) File.Delete(filePath);
+
+					// see if we can grab the 1080 source.  if failed, try to get the 1366 source
+					if (await RequestImagePath_TryBingApiAsync(new Uri(BingBaseUri, info.Url), date, rangeInfo, filePath))
 					{
-						rangeInfo.Callback(date, true, path);
-						return;
+						if (rangeInfo.IsCancelled) return;
+						if (RequestImagePath_TryFindValidImage(info.StartDate, out path))
+						{
+							rangeInfo.Callback(date, true, path);
+							return;
+						}
+					}
+					else if (!info.Url.ToLower().EndsWith("_1366x768.jpg"))
+					{
+						if (await RequestImagePath_TryBingApiAsync(new Uri(BingBaseUri, info.UrlBase + "_1366x768.jpg"), date, rangeInfo, filePath))
+						{
+							if (rangeInfo.IsCancelled) return;
+							if (RequestImagePath_TryFindValidImage(info.StartDate, out path))
+							{
+								rangeInfo.Callback(date, true, path);
+								return;
+							}
+						}
 					}
 				}
-				else if (await RequestImagePathTryBingApiAsync(new Uri(BingBaseUri, info.UrlBase + "_1366x768.jpg"), date, rangeInfo, filePath))
+				catch (Exception e)
 				{
-					if (rangeInfo.IsCancelled) return;
-					if (RequestImagePathCheckCache(info.StartDate, out path))
-					{
-						rangeInfo.Callback(date, true, path);
-						return;
-					}
+					// any exception cause the thread to fail
+					Trace.WriteLine(e.Message, "ModelManager().RequestImagePathForCalendarStartRequestAsync Exception");
 				}
-			}
-			catch (Exception e)
-			{
-				// any exception cause the thread to fail
-				Debug.WriteLine(e.Message);
+				finally
+				{
+					rangeInfo.RemoveRequest(date);
+					calendarRequestSemaphore.Release();
+				}
+				if (!rangeInfo.IsCancelled) rangeInfo.Callback(date, false, null);
 			}
 			finally
 			{
-				rangeInfo.RemoveRequest(date);
-				calendarRequestSemaphore.Release();
+				IOAccessControl.ReleaseAccess(date);
 			}
-			if (!rangeInfo.IsCancelled) rangeInfo.Callback(date, false, null);
 		}
 
-		private static async Task<bool> RequestImagePathTryBingApiAsync(Uri uri, string path)
+		#endregion calendar request starter
+
+		private static async Task<bool> RequestImagePath_TryBingApiAsync(Uri uri, string path)
 		{
 			galleryRequest = WebRequest.CreateHttp(uri);
 			try
@@ -369,7 +417,7 @@ namespace BingGalleryViewer.Model
 			return false;
 		}
 
-		private static async Task<bool> RequestImagePathTryBingApiAsync(Uri uri, DateTime date, RangeRequestInfo rangeInfo, string path)
+		private static async Task<bool> RequestImagePath_TryBingApiAsync(Uri uri, DateTime date, RangeRequestInfo rangeInfo, string path)
 		{
 			var request = WebRequest.CreateHttp(uri);
 			rangeInfo.SaveRequest(date, request);
@@ -398,13 +446,13 @@ namespace BingGalleryViewer.Model
 			return false;
 		}
 
-		private static bool RequestImagePathCheckCache(string p, out string path)
+		private static bool RequestImagePath_TryFindValidImage(string p, out string path)
 		{
 			p += ".jpg";
 			string cachePath = Path.Combine(Setting.GetCurrentSetting().CachePath.LocalPath, p);
 			string tempPath = Path.Combine(Setting.GetCurrentSetting().TempPath.LocalPath, p);
 			// check cache path.
-			if (RequestImagePathCheckCache(cachePath)) { path = cachePath; return true; }
+			if (RequestImagePath_TryFindValidImage_CheckCache(cachePath)) { path = cachePath; return true; }
 
 			// check tmp path.
 			if (File.Exists(tempPath))
@@ -419,7 +467,7 @@ namespace BingGalleryViewer.Model
 						if (!Setting.GetCurrentSetting().IsUsingCacheHd)
 						{
 							// we will downscale image to 800x450
-							RequestImagePathCheckCacheSaveDownscaleImage(image, cachePath);
+							RequestImagePath_TryFindValidImage_DownscaleImageAndSave(image, cachePath);
 						}
 						else
 						{
@@ -437,7 +485,7 @@ namespace BingGalleryViewer.Model
 			return false;
 		}
 
-		private static void RequestImagePathCheckCacheSaveDownscaleImage(Image image, string path)
+		private static void RequestImagePath_TryFindValidImage_DownscaleImageAndSave(Image image, string path)
 		{
 			var rect = new Rectangle(0, 0, 800, 450);
 			using (var bitmap = new Bitmap(800, 450))
@@ -460,7 +508,7 @@ namespace BingGalleryViewer.Model
 
 		}
 
-		private static bool RequestImagePathCheckCache(string path)
+		private static bool RequestImagePath_TryFindValidImage_CheckCache(string path)
 		{
 			if (Setting.GetCurrentSetting().IsUsingCache && File.Exists(path))
 			{
@@ -480,6 +528,8 @@ namespace BingGalleryViewer.Model
 			return false;
 		}
 
+		#endregion download helpers
+
 		public static void Cleanup()
 		{
 			if (_readonlyStore != null)
@@ -492,6 +542,9 @@ namespace BingGalleryViewer.Model
 
 		public static async Task<bool> SaveFileAsync(BingImageInfo info, string saveLocation)
 		{
+
+			if (!IsInitialized) throw new InvalidOperationException("Not initialized");
+
 			string fileName = info.StartDate + ".jpg";
 			string cachePath = Path.Combine(Setting.GetCurrentSetting().CachePath.LocalPath, fileName);
 			string tempPath = Path.Combine(Setting.GetCurrentSetting().TempPath.LocalPath, fileName);
@@ -569,17 +622,6 @@ namespace BingGalleryViewer.Model
 			{
 				lock (myLock) RequestHash.Remove(date);
 			}
-		}
-	}
-
-	internal class DataDownloadCompleteEventArgs : EventArgs
-	{
-		public readonly string Info;
-		public readonly bool IsImagePath;
-		public DataDownloadCompleteEventArgs(string id, bool isImagePath, string info)
-		{
-			IsImagePath = isImagePath;
-			Info = info;
 		}
 	}
 }

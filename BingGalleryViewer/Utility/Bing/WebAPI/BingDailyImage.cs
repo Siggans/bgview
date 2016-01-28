@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Runtime.Serialization.Json;
@@ -18,7 +19,7 @@ namespace BingGalleryViewer.Utility.Bing.WebAPI
 
 		public static BingImageInfo[] RequestImages(int i, int n)
 		{
-			if (i < 0 ) throw new ArgumentException("i >= 0");
+			if (i < 0) throw new ArgumentException("i >= 0");
 			if (n < 1) throw new ArgumentException("n >=1");
 			string requestUrl = string.Format(ImageAPI, i, n, MarketUS);
 			var request = WebRequest.Create(requestUrl);
@@ -36,7 +37,9 @@ namespace BingGalleryViewer.Utility.Bing.WebAPI
 				}
 
 			}
-			catch { }
+			catch (Exception e)
+			{
+			}
 			return new BingImageInfo[0];
 
 		}

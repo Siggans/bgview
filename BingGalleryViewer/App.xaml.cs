@@ -17,27 +17,33 @@ namespace BingGalleryViewer
 	/// </summary>
 	public partial class App : Application
 	{
+		public static async Task WaitForCurrentAppInitializationAsync()
+		{
+			try
+			{
+				await ((App)Current).WaitForInitializationCompleteAsync();
+			}
+			catch (ArgumentNullException) { } // don't care if currentApp returns null
+		}
+
 		private Task AppInitializationTask = null;
 
 		private void App_Startup(object sender, StartupEventArgs e)
 		{
-			if (AppInitializationTask == null)
+			if (!_isInitializatinoStarted)
 			{
-				IsReady = false;
-				StartInitializationTask();
+				_isInitializatinoStarted = true;
+				AppInitializationTask = StartInitializationTask();
 			}
 		}
 
-		private void StartInitializationTask()
+		private async Task StartInitializationTask()
 		{
-			AppInitializationTask = Task.Run(async() =>
-			{
-				PrepareSetting();
-				System.Net.ServicePointManager.DefaultConnectionLimit = ModelManager.RequiredConcurrentWebConnection;
-				Datastore.PrepareDatabaseIfNotExist();
-				await ModelManager.InitializeAsync();
-				IsReady = true;
-			});
+			PrepareSetting();
+			System.Net.ServicePointManager.DefaultConnectionLimit = ModelManager.RequiredConcurrentWebConnection;
+			Datastore.PrepareDatabaseIfNotExist();
+			await ModelManager.InitializeAsync();
+			_isReady = true;
 		}
 
 		private void PrepareSetting()
@@ -61,14 +67,16 @@ namespace BingGalleryViewer
 			catch { }
 		}
 
-		public bool IsReady { get; private set; }
+		private bool _isReady = false;
+		private bool _isInitializatinoStarted = false;
 
-		public void WaitForInitializationComplete()
+		public bool IsReady { get { return _isReady; } }
+
+		private async Task WaitForInitializationCompleteAsync()
 		{
-			if (!IsReady)
-			{
-				Task.WaitAll(AppInitializationTask);
-			}
+			if (!_isInitializatinoStarted) throw new ApplicationException("App_Startup has not been called");
+			while (!IsReady)
+				await Task.WhenAll(AppInitializationTask);
 		}
 	}
 }

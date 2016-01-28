@@ -94,6 +94,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Model\ModelManager.cs" />
+    <Compile Include="Model\ModelManager.IOAccessControl.cs" />
     <Compile Include="Utility\Bing\BingDataHelper.cs" />
     <Compile Include="Utility\Bing\BingJson.cs" />
     <Compile Include="Utility\Bing\WebAPI\BingDailyImage.cs" />

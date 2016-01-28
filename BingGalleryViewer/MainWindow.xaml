@@ -16,7 +16,6 @@
 	GlowBrush="Black"
 	BorderThickness="2" 
 	Closing="MainWindow_Closing"
-	Loaded="MainWindow_Loaded"
 	Icon="Resources/Uiconstock-Socialmedia-Bing.ico"
 >
 	<Window.Resources>

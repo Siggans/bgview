@@ -28,6 +28,7 @@ namespace BingGalleryViewer.View
 
 		public static DateTime MaxTime { get { return Setting.GetCurrentSetting().BingDateMax; } }
 		public static DateTime MinTime { get { return Setting.GetCurrentSetting().BingDateMin; } }
+
 		private DateTime _currentCalendarTime = CalendarView.MaxTime;
 		public DateTime CurrentCalendarTime { get { return _currentCalendarTime; } }
 

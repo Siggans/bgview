@@ -92,11 +92,6 @@ namespace BingGalleryViewer
 			return false;
 		}
 
-		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-		{
-			((App)App.Current).WaitForInitializationComplete();
-		}
-
 		internal void SwitchToView(DateTime dateTime)
 		{
 			if (Setting.GetCurrentSetting().BingDateMin <= dateTime && dateTime<=Setting.GetCurrentSetting().BingDateMax)

@@ -98,8 +98,11 @@ namespace BingGalleryViewer.ViewModel
 				return;
 			}
 
+			await App.WaitForCurrentAppInitializationAsync();
+
 			try
 			{
+				while (!ModelManager.IsInitialized) await Task.Yield();
 				_info = await ModelManager.RequestImageInfoAsync(date);
 
 				if (date != _currentDate) return;
