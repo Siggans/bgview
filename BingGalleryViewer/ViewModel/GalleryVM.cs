@@ -138,9 +138,9 @@ namespace BingGalleryViewer.ViewModel
 
 		private void UpdateCaptions(string p)
 		{
-			if (App.Current != null && p != null)
+			if (p != null)
 			{
-				if (App.Current.Dispatcher.Thread == System.Threading.Thread.CurrentThread)
+				if (App.IsOnAppThread())
 				{
 					var index = p.LastIndexOf("(©");
 					if (index != -1)
@@ -150,26 +150,18 @@ namespace BingGalleryViewer.ViewModel
 					}
 					else CaptionText = p;
 				}
-				else
-				{
-					App.Current.Dispatcher.Invoke(() => UpdateCaptions(p));
-				}
+				else App.UIThreadInvoke(() => UpdateCaptions(p));
+			
 			}
 		}
 
 		private void UpdateFailedStatusMessage(string p)
 		{
-			if (App.Current != null)
-			{
-				if (App.Current.Dispatcher.Thread == System.Threading.Thread.CurrentThread)
+				if (App.IsOnAppThread())
 				{
 					this.ErrorMessageText = p;
 				}
-				else
-				{
-					App.Current.Dispatcher.Invoke(() => UpdateFailedStatusMessage(p));
-				}
-			}
+				else App.UIThreadInvoke(() => this.ErrorMessageText = p);
 		}
 
 		private RelayCommand _saveCommand;
@@ -188,8 +180,11 @@ namespace BingGalleryViewer.ViewModel
 		private async void SaveCommandExecute()
 		{
 			var info = _info;
+
 			if(info != null)
 			{
+				var window = App.GetCurrentMainWindow();
+				if (window == null) return;
 				var dialog = new SaveFileDialog()
 				{
 					DefaultExt = ".jpg",
@@ -199,12 +194,12 @@ namespace BingGalleryViewer.ViewModel
 					Title = "Save Image ...",
 					FileName = CaptionText+".jpg",
 				};
-				var result = dialog.ShowDialog(App.Current.MainWindow);
+				var result = dialog.ShowDialog(window);
 				if(result.HasValue && result.Value)
 				{
 					if(!await ModelManager.SaveFileAsync(info, dialog.FileName))
 					{
-						MessageBox.Show(App.Current.MainWindow, "Cannot save file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+						MessageBox.Show(window, "Cannot save file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 					}
 				}
 			}

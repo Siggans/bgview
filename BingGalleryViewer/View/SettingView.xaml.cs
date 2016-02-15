@@ -43,7 +43,9 @@ namespace BingGalleryViewer.View
 				Multiselect=false,
 				Title = "Select New Cache Path...",
 			};
-			var result = dialog.ShowDialog(App.Current.MainWindow);
+			var window = App.GetCurrentMainWindow();
+			if (window == null) return;
+			var result = dialog.ShowDialog(window);
 			if (result == CommonFileDialogResult.Ok)
 			{
 				try

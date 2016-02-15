@@ -12,11 +12,14 @@ namespace BingGalleryViewer.Utility
 	{
 		private readonly IntPtr _handle;
 
-		public Win32WindowAdaptor() : this(App.Current.MainWindow) { }
-
+		public Win32WindowAdaptor() : this(App.GetCurrentMainWindow()) { }
 		public Win32WindowAdaptor(Window window)
 		{
-			_handle = (PresentationSource.FromVisual(window) as System.Windows.Interop.HwndSource).Handle;
+			if (window != null)
+			{
+				_handle = (PresentationSource.FromVisual(window) as System.Windows.Interop.HwndSource).Handle;
+			}
+			else _handle = IntPtr.Zero;
 		}
 
 		public IntPtr Handle

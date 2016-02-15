@@ -17,6 +17,27 @@ namespace BingGalleryViewer
 	/// </summary>
 	public partial class App : Application
 	{
+
+		public static Window GetCurrentMainWindow()
+		{
+			var app = App.Current;
+			if (app == null) return null;
+			return app.MainWindow;
+		}
+
+		public static bool IsOnAppThread()
+		{
+			var app = App.Current;
+			if (app == null) return false;
+			return app.Dispatcher.Thread == System.Threading.Thread.CurrentThread;
+		}
+
+		public static void UIThreadInvoke(Action action)
+		{
+			var app = App.Current;
+			if (app != null) app.Dispatcher.Invoke(action);
+		}
+
 		public static async Task WaitForCurrentAppInitializationAsync()
 		{
 			try
@@ -75,7 +96,7 @@ namespace BingGalleryViewer
 		private async Task WaitForInitializationCompleteAsync()
 		{
 			if (!_isInitializatinoStarted) throw new ApplicationException("App_Startup has not been called");
-			while (!IsReady)
+			if (!IsReady)
 				await Task.WhenAll(AppInitializationTask);
 		}
 	}

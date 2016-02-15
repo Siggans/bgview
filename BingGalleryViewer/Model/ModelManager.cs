@@ -143,23 +143,25 @@ namespace BingGalleryViewer.Model
 		{
 			// let's see if we need to reanchor
 			var infos = BingDailyImage.RequestImages(0, 1);
-			if (infos.Length == 1) // only process if bing isn't throwing us in loops.
+			if (infos.Length == 1) // sanity check, anything not in one day while calling for this operation will fail
 			{
 				DateTime newAnchor;
-				if (BingDataHelper.TryConvertStartdate(infos[0].StartDate, out newAnchor) && newAnchor != anchorDate)
+				if (BingDataHelper.TryConvertStartdate(infos[0].StartDate, out newAnchor))
 				{
-					anchorDate = newAnchor;
-					// date shift should only occure for one day
-					if ((newAnchor - anchorDate).Days == 1)
+					if (newAnchor != anchorDate)
 					{
-						// add in case the new date wasn't set.
-						if (!set.Contains(infos[0])) set.Add(infos[0]);
+						anchorDate = newAnchor;
+						// date shift should only occure for one day
+						if ((newAnchor - anchorDate).Days == 1)
+						{
+							// add in case the new date wasn't set.
+							if (!set.Contains(infos[0])) set.Add(infos[0]);
+							return true;
+						}
 					}
-					else return false; // shift unsuccessful
 				}
-				return true;
 			}
-			return false;
+			return false; // failed to shift
 		}
 		#endregion InitializeAsync Helper
 
@@ -554,16 +556,18 @@ namespace BingGalleryViewer.Model
 				if (File.Exists(tempPath)) File.Copy(tempPath, saveLocation);
 				return true;
 			}
-			catch { }
+			catch (Exception e) { Trace.WriteLine(e.Message); }
+
+			// file error, test next
 
 			try
 			{
 				if (File.Exists(cachePath) && Setting.GetCurrentSetting().IsUsingCacheHd) File.Copy(cachePath, saveLocation);
 				return true;
 			}
-			catch { }
+			catch (Exception e) { Trace.WriteLine(e.Message); }
 
-			// need to redownload the file
+			// still error, last try: redownload the file
 			var request = WebRequest.CreateHttp(new Uri(BingBaseUri, info.Url));
 			try
 			{
@@ -575,7 +579,7 @@ namespace BingGalleryViewer.Model
 					return true;
 				}
 			}
-			catch (Exception) { }
+			catch (Exception e) { Trace.WriteLine(e.Message); }
 			return false;
 
 		}

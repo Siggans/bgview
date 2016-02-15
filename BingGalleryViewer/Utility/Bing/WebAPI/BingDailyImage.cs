@@ -20,7 +20,7 @@ namespace BingGalleryViewer.Utility.Bing.WebAPI
 		public static BingImageInfo[] RequestImages(int i, int n)
 		{
 			if (i < 0) throw new ArgumentException("i >= 0");
-			if (n < 1) throw new ArgumentException("n >=1");
+			if (n < 1) throw new ArgumentException("n >= 1");
 			string requestUrl = string.Format(ImageAPI, i, n, MarketUS);
 			var request = WebRequest.Create(requestUrl);
 			try
@@ -37,9 +37,7 @@ namespace BingGalleryViewer.Utility.Bing.WebAPI
 				}
 
 			}
-			catch (Exception e)
-			{
-			}
+			catch (Exception e) { Trace.WriteLine(e.Message); }
 			return new BingImageInfo[0];
 
 		}

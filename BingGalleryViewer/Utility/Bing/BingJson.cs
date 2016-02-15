@@ -10,7 +10,7 @@ namespace BingGalleryViewer.Utility.Bing
 	[DataContract]
 	public class BingJson
 	{
-		[DataMember(IsRequired=true, Name="images")]
+		[DataMember(IsRequired = true, Name = "images")]
 		public BingImageInfo[] Images { get; set; }
 	}
 
@@ -20,19 +20,19 @@ namespace BingGalleryViewer.Utility.Bing
 		[DataMember(IsRequired = true, Name = "startdate")]
 		public string StartDate { get; set; }
 
-		[DataMember(IsRequired=true, Name = "url")]
+		[DataMember(IsRequired = true, Name = "url")]
 		public string Url { get; set; }
 
-		[DataMember(IsRequired=true, Name="urlbase")]
+		[DataMember(IsRequired = true, Name = "urlbase")]
 		public string UrlBase { get; set; }
 
-		[DataMember(IsRequired=true, Name="copyright")]
+		[DataMember(IsRequired = true, Name = "copyright")]
 		public string Copyright { get; set; }
 
 		[DataMember(IsRequired = true, Name = "copyrightlink")]
 		public string CopyrightLink { get; set; }
 
-		public class Comparer :IComparer<BingImageInfo>
+		public class Comparer : IComparer<BingImageInfo>
 		{
 
 			public int Compare(BingImageInfo x, BingImageInfo y)

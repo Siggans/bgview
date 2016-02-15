@@ -86,28 +86,26 @@ namespace BingGalleryViewer.View
 
 		private void OnIndivisualResultCompleted(DateTime date, bool isSuccess, string path)
 		{
-			if (App.Current != null)
+			if (App.IsOnAppThread())
 			{
-				if (App.Current.Dispatcher.Thread == System.Threading.Thread.CurrentThread)
+				var list = days;
+				if (list != null)
 				{
-					var list = days;
-					if(list !=null)
+					foreach (var day in list)
 					{
-						foreach(var day in list)
+						if (day.Date == date)
 						{
-							if(day.Date==date)
-							{
-								if (isSuccess) day.SetImageSource(new Uri(path));
-								else day.IsInUse = false;
-								break;
-							}
-
+							if (isSuccess) day.SetImageSource(new Uri(path));
+							else day.IsInUse = false;
+							break;
 						}
-					}
 
+					}
 				}
-				else App.Current.Dispatcher.Invoke(() => OnIndivisualResultCompleted(date, isSuccess, path));
+
 			}
+			else App.UIThreadInvoke(() => OnIndivisualResultCompleted(date, isSuccess, path));
+
 		}
 
 		private void AddMonthToCalendarTime(int offsetMonth, bool forceTransition = false)
@@ -133,11 +131,11 @@ namespace BingGalleryViewer.View
 			{
 				days_DetachEvents();
 				var ctrl = this.CreateCalendarDisplay(newDate, out days);
-				if(!VsDesignHelper.IsDesignerHosted)
+				if (!VsDesignHelper.IsDesignerHosted)
 					((CalendarVM)this.DataContext).SetCurrentDates(days);
 				this.CalendarTransition.Content = ctrl;
 				days_AttachEvents();
-				
+
 			}
 
 			this._currentCalendarTime = newDate;
@@ -146,7 +144,8 @@ namespace BingGalleryViewer.View
 
 		private void day_DateSelected(DependencyObject obj, CalendarDayView.DateSelectedEventArgs args)
 		{
-			((MainWindow)App.Current.MainWindow).SwitchToView(args.Date);
+			var window = App.GetCurrentMainWindow();
+			if(window != null) ((MainWindow)window).SwitchToView(args.Date);
 		}
 
 		private void SetTitleBarButtonsEnableStatus()
