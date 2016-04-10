@@ -8,7 +8,8 @@ using System.Windows.Input;
 namespace VMBase.ViewModel
 {
 	/// <summary>
-	/// ICommand implemenation to be used with MVVM design model
+	/// ICommand implemenation to be used with MVVM design model where T is the parameter type that
+	/// would be supplied to  <see cref="ICommand.CanExecute(object)"/> or <see cref="ICommand.Execute(object)"/>
 	/// </summary>
 	/// <typeparam name="T">input type</typeparam>
 	public class RelayCommand<T> : ICommand
@@ -23,6 +24,10 @@ namespace VMBase.ViewModel
 		/// determines that if a command can be carried out  
 		/// </summary>
 		private readonly Predicate<T> _canExecute;
+
+		/// <summary>
+		/// Not used
+		/// </summary>
 		public bool IsSelfRequery { get; private set; }
 
 		#endregion members
@@ -31,8 +36,8 @@ namespace VMBase.ViewModel
 		/// <summary>
 		/// Create a relay command
 		/// </summary>
-		/// <param name="execute"></param>
-		/// <param name="canExecute"></param>
+		/// <param name="execute">action to perform</param>
+		/// <param name="canExecute">condition to check before execution</param>
 		/// <param name="enableSelfRequery">disabled, does not affect function</param>
 		/// <exception cref="ArgumentNullException">execute cannot be null</exception>
 		public RelayCommand(Action<T> execute, Predicate<T> canExecute, bool enableSelfRequery = false)
@@ -50,8 +55,8 @@ namespace VMBase.ViewModel
 		/// <summary>
 		/// Create a relay command without predicate check
 		/// </summary>
-		/// <param name="execute"></param>
-		/// <param name="enableSelfRequery"></param>
+		/// <param name="execute">action to perform</param>
+		/// <param name="enableSelfRequery">disabled, does not affect function</param>
 		/// <exception cref="ArgumentNullException">execute cannot be null</exception>
 		public RelayCommand(Action<T> execute, bool enableSelfRequery = false)
 			: this(execute, null, enableSelfRequery)
@@ -61,12 +66,20 @@ namespace VMBase.ViewModel
 
 		#region ICommand implement
 
+		/// <summary>
+		/// Implemenation of <see cref="ICommand.CanExecute(object)"/>
+		/// </summary>
+		/// <param name="parameter">input value</param>
+		/// <returns>true if can execute</returns>
 		public bool CanExecute(object parameter)
 		{
 			// may require thread check here to ensure threadsafty
 			return (null == this._canExecute) ? true : this._canExecute((T)parameter);
 		}
 
+		/// <summary>
+		/// Implementation of <see cref="ICommand.CanExecuteChanged"/>. 
+		/// </summary>
 		public event EventHandler CanExecuteChanged
 		{
 			// attach to command manager,  should modify if we need custom commandmanager
@@ -74,6 +87,10 @@ namespace VMBase.ViewModel
 			remove { CommandManager.RequerySuggested -= value; }
 		}
 
+		/// <summary>
+		/// Implemenation of <see cref="ICommand.Execute(object)"/>
+		/// </summary>
+		/// <param name="parameter">input value</param>
 		public void Execute(object parameter)
 		{
 			this._execute((T)parameter);
@@ -98,6 +115,10 @@ namespace VMBase.ViewModel
 		/// determines that if a command can be carried out  
 		/// </summary>
 		private readonly Predicate<object> _canExecute;
+
+		/// <summary>
+		/// Not used
+		/// </summary>
 		public bool IsSelfRequery { get; private set; }
 
 		#endregion members
@@ -106,8 +127,8 @@ namespace VMBase.ViewModel
 		/// <summary>
 		/// Create a relay command
 		/// </summary>
-		/// <param name="execute"></param>
-		/// <param name="canExecute"></param>
+		/// <param name="execute">action to perform</param>
+		/// <param name="canExecute">condition to check before execution</param>
 		/// <param name="enableSelfRequery">disabled, does not affect function</param>
 		/// <exception cref="ArgumentNullException">execute cannot be null</exception>
 		public RelayCommand(Action execute, Predicate<object> canExecute, bool enableSelfRequery = false)
@@ -125,8 +146,8 @@ namespace VMBase.ViewModel
 		/// <summary>
 		/// Create a relay command without predicate check
 		/// </summary>
-		/// <param name="execute"></param>
-		/// <param name="enableSelfRequery"></param>
+		/// <param name="execute">action to perform</param>
+		/// <param name="enableSelfRequery">disabled, does not affect function</param>
 		/// <exception cref="ArgumentNullException">execute cannot be null</exception>
 		public RelayCommand(Action execute, bool enableSelfRequery = false)
 			: this(execute, null, enableSelfRequery)
@@ -136,12 +157,20 @@ namespace VMBase.ViewModel
 
 		#region ICommand implement
 
+		/// <summary>
+		/// Implemenation of <see cref="ICommand.CanExecute(object)"/>
+		/// </summary>
+		/// <param name="parameter">input value</param>
+		/// <returns>true if can execute</returns>
 		public bool CanExecute(object parameter)
 		{
 			// may require thread check here to ensure threadsafty
 			return (null == this._canExecute) ? true : this._canExecute(parameter);
 		}
 
+		/// <summary>
+		/// Implementation of <see cref="ICommand.CanExecuteChanged"/>. 
+		/// </summary>
 		public event EventHandler CanExecuteChanged
 		{
 			// attach to command manager,  should modify if we need custom commandmanager
@@ -149,6 +178,10 @@ namespace VMBase.ViewModel
 			remove { CommandManager.RequerySuggested -= value; }
 		}
 
+		/// <summary>
+		/// Implemenation of <see cref="ICommand.Execute(object)"/>
+		/// </summary>
+		/// <param name="parameter">input value</param>
 		public void Execute(object parameter)
 		{
 			this._execute();

@@ -8,6 +8,9 @@ using System.Windows.Forms;
 
 namespace BingGalleryViewer.Utility
 {
+	/// <summary>
+	/// helper for adapting wpf windows to win32 api.
+	/// </summary>
 	class Win32WindowAdaptor : IWin32Window
 	{
 		private readonly IntPtr _handle;
@@ -17,6 +20,7 @@ namespace BingGalleryViewer.Utility
 		{
 			if (window != null)
 			{
+				// Retrieve the main window's handler.
 				_handle = (PresentationSource.FromVisual(window) as System.Windows.Interop.HwndSource).Handle;
 			}
 			else _handle = IntPtr.Zero;

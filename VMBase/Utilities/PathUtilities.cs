@@ -8,8 +8,16 @@ using System.Threading.Tasks;
 
 namespace VMBase.Utilities
 {
+	/// <summary>
+	/// Provides utility for file path
+	/// </summary>
 	public class PathUtilities
 	{
+		/// <summary>
+		/// Ensure that a give path has writhe permission for the current user.
+		/// </summary>
+		/// <param name="path">path to check</param>
+		/// <returns>true if verified</returns>
 		public static bool VerifyDirectoryWritePermission(string path)
 		{
 			if (Directory.Exists(path))

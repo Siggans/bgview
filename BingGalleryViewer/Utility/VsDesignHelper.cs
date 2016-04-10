@@ -37,10 +37,14 @@ namespace BingGalleryViewer.Utility
 		{
 			get
 			{
-				return IsDesignerHostedImpl(_ctrl);
+				if(!_isDesignerHosted.HasValue)
+				{
+					_isDesignerHosted = IsDesignerHostedImpl(_ctrl);
+				}
+				return _isDesignerHosted.Value;
 			}
-
 		}
+		private static bool? _isDesignerHosted = null;
 
 		/// <summary>
 		/// Check if the run time is currently being executed in design mode with supplied object
@@ -55,15 +59,18 @@ namespace BingGalleryViewer.Utility
 		private static bool IsDesignerHostedImpl(Control ctrl)
 		{
 
-			if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
-				return true;
+			// try license manager detection
+			if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return true;
 
+			// otherwise, try windows form detection.
 			while (ctrl != null)
 			{
 				if ((ctrl.Site != null) && ctrl.Site.DesignMode)
 					return true;
 				ctrl = ctrl.Parent;
 			}
+
+			// assume not in designer mode if the above two fails.
 			return false;
 
 		}
@@ -75,12 +82,8 @@ namespace BingGalleryViewer.Utility
 		/// <returns>true if in design mode</returns>
 		public static bool TestDesignModeExecute(Action action)
 		{
-			bool isHosted = VsDesignHelper.IsDesignerHosted;
-			if (isHosted)
-			{
-				action.Invoke();
-			}
-			return isHosted;
+			if (IsDesignerHosted) action.Invoke();
+			return IsDesignerHosted;
 		}
 
 
@@ -88,8 +91,8 @@ namespace BingGalleryViewer.Utility
 		/// Execute either inDesignerModeInitialization or normalModeInitialization depending if 
 		/// currently in design mode based on the dependency object
 		/// </summary>
-		/// <param name="inDesignModeAction"></param>
-		/// <param name="normalModeAction"></param>
+		/// <param name="inDesignModeAction">action to perform in designer mode</param>
+		/// <param name="normalModeAction">action to perform otherwise</param>
 		public static void TestDesignModeExecute(Action inDesignModeAction, Action normalModeAction)
 		{
 			if (IsDesignerHosted)

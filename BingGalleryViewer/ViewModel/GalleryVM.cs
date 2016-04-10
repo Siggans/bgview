@@ -15,9 +15,16 @@ using VMBase.ViewModel;
 
 namespace BingGalleryViewer.ViewModel
 {
+	/// <summary>
+	/// View model for gallery view
+	/// </summary>
 	public class GalleryVM : ViewModelBase
 	{
+		
 		private string _dateCaptionText = "Monday, March 01, 2000";
+		/// <summary>
+		/// Date display for gallery view
+		/// </summary>
 		public string DateCaptionText
 		{
 			get { return _dateCaptionText; }
@@ -25,6 +32,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private string _captionText = "This is a Test Caption";
+		/// <summary>
+		/// Description text for gallery view
+		/// </summary>
 		public string CaptionText
 		{
 			get { return _captionText; }
@@ -32,6 +42,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private string _copyrightText = "© CopyRight Test Output";
+		/// <summary>
+		/// Copyright text for gallery view
+		/// </summary>
 		public string CopyrightText
 		{
 			get { return _copyrightText; }
@@ -39,6 +52,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private string _errorMessageText = string.Empty;
+		/// <summary>
+		/// Error message display for gallery view
+		/// </summary>
 		public string ErrorMessageText
 		{
 			get { return _errorMessageText; }
@@ -46,6 +62,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private string _imagePathText = string.Empty;
+		/// <summary>
+		/// link to image path
+		/// </summary>
 		public string ImagePathText
 		{
 			get { return _imagePathText; }
@@ -53,6 +72,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private DateTime _currentDate;
+		/// <summary>
+		/// DateTime for the current date displayed by gallery
+		/// </summary>
 		public DateTime CurrentDateNotifyOnly
 		{
 			get { return _currentDate; }
@@ -60,6 +82,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private bool _isSaveEnabled;
+		/// <summary>
+		/// Enable control for image to be saved
+		/// </summary>
 		public bool IsSaveEnabled
 		{
 			get { return _isSaveEnabled; }
@@ -67,6 +92,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private bool _isInfoEnabled;
+		/// <summary>
+		/// Enable control for image info to be linked
+		/// </summary>
 		public bool IsInfoEnabled
 		{
 			get { return _isInfoEnabled; }
@@ -74,23 +102,31 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 
+		// helper to set current date.
 		private void SetCurrentDate(DateTime date)
 		{
+			// reset fields
 			_currentDate = date.Date;
 			CaptionText = CopyrightText = "";
 			IsInfoEnabled = IsSaveEnabled = false;
 			_info = null;
+
+			// setting up fields with provided date
 			DateCaptionText = date.ToString("dddd, MMM dd, yyyy");
 			if (Setting.GetCurrentSetting().IsInitialized && ModelManager.IsInitialized
 				&& Setting.GetCurrentSetting().BingDateMin <= date && date <= Setting.GetCurrentSetting().BingDateMax)
 			{
+				// once app is initialize,  get data from model
 				Task.Run(() => RequestDateFromModel(_currentDate));
 			}
 		}
 
+		// current date
 		private BingImageInfo _info;
+		// helper to set current date.
 		private async void RequestDateFromModel(DateTime date, int retryCount = 0)
 		{
+			// only perform this task if no new date were entered
 			if (date != _currentDate) return;
 			if (retryCount == 3)
 			{
@@ -102,6 +138,7 @@ namespace BingGalleryViewer.ViewModel
 
 			try
 			{
+				// query model manager and initialize the display
 				while (!ModelManager.IsInitialized) await Task.Yield();
 				_info = await ModelManager.RequestImageInfoAsync(date);
 
@@ -136,12 +173,15 @@ namespace BingGalleryViewer.ViewModel
 			}
 		}
 
+		// helper to modify image caption on UI thread
 		private void UpdateCaptions(string p)
 		{
 			if (p != null)
 			{
 				if (App.IsOnAppThread())
 				{
+					// divid the copyright text to be displayed where the author/company holding
+					// the copyright is prefixed by "(©"
 					var index = p.LastIndexOf("(©");
 					if (index != -1)
 					{
@@ -155,6 +195,7 @@ namespace BingGalleryViewer.ViewModel
 			}
 		}
 
+		// display error message
 		private void UpdateFailedStatusMessage(string p)
 		{
 				if (App.IsOnAppThread())
@@ -165,6 +206,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private RelayCommand _saveCommand;
+		/// <summary>
+		/// Command for saving image
+		/// </summary>
 		public ICommand SaveCommand
 		{
 			get
@@ -177,12 +221,18 @@ namespace BingGalleryViewer.ViewModel
 			}
 		}
 		
+		/// <summary>
+		/// Save image to disk
+		/// </summary>
 		private async void SaveCommandExecute()
 		{
 			var info = _info;
 
 			if(info != null)
 			{
+				// open save file dialog to pick a save location
+				// FUTURE:  should find another plugin for save file dialog that does not take
+				// ages to initialize.
 				var window = App.GetCurrentMainWindow();
 				if (window == null) return;
 				var dialog = new SaveFileDialog()
@@ -210,6 +260,9 @@ namespace BingGalleryViewer.ViewModel
 		}
 
 		private RelayCommand _infoCommand;
+		/// <summary>
+		/// Opens browser to bing's page regarding to this image.
+		/// </summary>
 		public ICommand InfoCommand
 		{
 			get
@@ -222,6 +275,7 @@ namespace BingGalleryViewer.ViewModel
 			}
 		}
 
+		// open link on browser to link to bing's description on the image.
 		private void InfoCommandExecute()
 		{
 			var info = _info;

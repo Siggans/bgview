@@ -8,9 +8,14 @@ using System.Threading.Tasks;
 
 namespace BingGalleryViewer.Utility
 {
+	/// <summary>
+	/// Program configuration settings.
+	/// </summary>
 	public class Setting
 	{
-
+		/// <summary>
+		/// parameter names for setting file
+		/// </summary>
 		private class IniNames
 		{
 			public const string UseCache = "UseCache";
@@ -21,7 +26,12 @@ namespace BingGalleryViewer.Utility
 			public static readonly string MatchCachePath = CachePath.ToLower();
 		}
 
+		// singleton design
 		private static Setting _currentSetting = null;
+		/// <summary>
+		/// Get the current project setting
+		/// </summary>
+		/// <returns>current setting</returns>
 		public static Setting GetCurrentSetting()
 		{
 			if (_currentSetting == null)
@@ -31,6 +41,10 @@ namespace BingGalleryViewer.Utility
 			return _currentSetting;
 		}
 
+		/// <summary>
+		/// save a default setting if no setting file exists
+		/// </summary>
+		/// <param name="path">location of the config file</param>
 		public static void CreateFoldersIfNotExist(string path)
 		{
 			var pathName = Path.GetDirectoryName(path);
@@ -38,47 +52,99 @@ namespace BingGalleryViewer.Utility
 			Directory.CreateDirectory(pathName);
 		}
 
+		/// <summary>
+		/// Location of the AppData where configuration will be stored
+		/// </summary>
 		public static readonly Uri AppDataDirectory = new Uri(
 			Path.Combine(Environment.ExpandEnvironmentVariables("%AppData%"),
 				"..", "LocalLow", "BingGalleryViewer"));
+		/// <summary>
+		/// Default cache location
+		/// </summary>
 		public static readonly Uri DefaultCachePath = new Uri(
 			Path.Combine(AppDataDirectory.LocalPath, "Cache"));
+		/// <summary>
+		/// Default configuration file save location
+		/// </summary>
 		public static readonly Uri SettingFilePath = new Uri(
 			Path.Combine(AppDataDirectory.LocalPath, "config.ini"));
 
 		private DateTime _dateMax = DateTime.Now.Date;
+		/// <summary>
+		/// Max date that is usable in this app
+		/// </summary>
 		public DateTime BingDateMax { get { return _dateMax; } }
+		/// <summary>
+		/// Update the max date
+		/// </summary>
+		/// <param name="newDate">new date</param>
 		public void SetBingDateMax(DateTime newDate) { _dateMax = newDate.Date; }
 
+
+
 		private DateTime _dateMin = DateTime.Now.AddDays(-18).Date;
+		/// <summary>
+		/// Min date that is usable in this app
+		/// </summary>
 		public DateTime BingDateMin { get { return _dateMin; } }
+		/// <summary>
+		/// Update the min date
+		/// </summary>
+		/// <param name="newDate">new date</param>
 		public void SetBingDateMin(DateTime newDate) { _dateMin = newDate.Date; }
 
-		public bool IsMinDateFound = false;
+		/// <summary>
+		/// Allows caching of image data to specific folder
+		/// </summary>
 		public bool IsUsingCache = true;
+		/// <summary>
+		/// Determines if the image saved should be of high quality
+		/// </summary>
 		public bool IsUsingCacheHd = false;
+		/// <summary>
+		/// cache folder location
+		/// </summary>
 		public Uri CachePath;
 
-		private Uri _tempPath = null;
-
+		
+		/// <summary>
+		/// path to sqlite database for this application
+		/// </summary>
 		public readonly Uri DatastoreFilePath = new Uri(
 			Path.Combine(AppDataDirectory.LocalPath, "local.sqlite"));
 
 
+		private Uri _tempPath = null;
+		/// <summary>
+		/// temp folder for this application
+		/// </summary>
 		public Uri TempPath { get { return _tempPath; } }
 
 		private Uri _settingFile;
+		/// <summary>
+		/// Setting file path
+		/// </summary>
 		public Uri FilePath { get { return _settingFile; } }
 
 		private bool _isInitialized = false;
+		/// <summary>
+		/// Check if setting file has been read.
+		/// </summary>
 		public bool IsInitialized { get { return _isInitialized; } }
 
 
+		/// <summary>
+		/// Constructor, singleton pattern
+		/// </summary>
 		private Setting()
 		{
 			this._settingFile = SettingFilePath;
 		}
 
+
+		/// <summary>
+		/// Initialize the setting from file, or default values if setting file is missing
+		/// </summary>
 		public void Initialize()
 		{
 
@@ -95,6 +161,9 @@ namespace BingGalleryViewer.Utility
 			}
 		}
 
+		/// <summary>
+		/// Save settings to file
+		/// </summary>
 		public void SaveSetting()
 		{
 			try
@@ -114,24 +183,33 @@ namespace BingGalleryViewer.Utility
 
 		}
 
+		/// <summary>
+		/// Default values for setting if no configuration exists
+		/// </summary>
 		private void SetDefaultValues()
 		{
-			IsMinDateFound = false;
 			IsUsingCache = true;
 			IsUsingCacheHd = false;
 			CachePath = DefaultCachePath;
 			_tempPath = new Uri(Path.Combine(Path.GetTempPath(), "BGVCACHE"));
 		}
 
+		/// <summary>
+		/// Read in setting file
+		/// </summary>
+		/// <param name="path"></param>
 		private void ReadSettings(string path)
 		{
 			try
 			{
+				// read in file and parse line by line
 				using (var reader = new StreamReader(path))
 				{
 					string cachePath = null;
 					bool? isUsingCache = null;
 					bool? isUsingCacheHd = null;
+					// read til end of file
+					// only first setting will take effect.  subsequence settings of the same value will be ignored.
 					while (!reader.EndOfStream)
 					{
 						var line = reader.ReadLine().Trim().ToLower();
@@ -151,9 +229,10 @@ namespace BingGalleryViewer.Utility
 							if (token == "true") isUsingCacheHd = true;
 							else if (token == "false") isUsingCacheHd = false;
 						}
-
+						// terminate early if all settings  had been read.
 						if (cachePath != null && isUsingCache.HasValue && isUsingCacheHd.HasValue) break;
 					}
+
 					if (!string.IsNullOrEmpty(cachePath) && Directory.Exists(cachePath)) this.CachePath = new Uri(cachePath);
 					if (isUsingCache.HasValue) IsUsingCache = isUsingCache.Value;
 					if (isUsingCacheHd.HasValue) IsUsingCacheHd = isUsingCacheHd.Value;
@@ -161,9 +240,11 @@ namespace BingGalleryViewer.Utility
 			}
 			catch (Exception)
 			{
-				// any sort of exception we just quit;
+				// any sort of exception we use default value
 			}
 		}
+
+		// simple parsing of the line from read file to retrieve rhs value.
 		private string ReadSetting_GetLineValue(string line)
 		{
 			var ind = line.IndexOf('=');
@@ -177,6 +258,8 @@ namespace BingGalleryViewer.Utility
 			}
 			return null;
 		}
+
+		// simple writer for key-value pair for ini file.
 		private void SaveSettingAsync_WriteLine(StreamWriter writer, string name, string value)
 		{
 			writer.Write(name);

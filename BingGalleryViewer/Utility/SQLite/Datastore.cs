@@ -6,22 +6,40 @@ using System.Threading.Tasks;
 using System.Data.SQLite;
 using System.IO;
 using BingGalleryViewer.Utility.Bing;
+using System.Diagnostics;
 namespace BingGalleryViewer.Utility.SQLite
 {
+	/// <summary>
+	/// BGV's SQLite database access layer.  Validate, save, and retrieve data to and from sqlite database.
+	/// </summary>
 	internal partial class Datastore : IDisposable
 	{
+
+		/// <summary>
+		/// Location to the sqlite database
+		/// </summary>
 		private static string FilePath { get { return Setting.GetCurrentSetting().DatastoreFilePath.LocalPath; } }
+
+		/// <summary>
+		/// Create a new sqlite database file if none exist before
+		/// </summary>
 		public static void PrepareDatabaseIfNotExist()
 		{
 			PrepareDatabaseIfNotExist(FilePath);
 		}
 
+		/// <summary>
+		/// Create a new sqlite database file if none exist before
+		/// </summary>
+		/// <param name="filepath">file path to the file</param>
 		public static void PrepareDatabaseIfNotExist(string filepath)
 		{
 
 			try
 			{
+				// check if file exists, if not, create the databasefile
 				if (!File.Exists(filepath)) SQLiteConnection.CreateFile(FilePath);
+
 				var builder = new SQLiteConnectionStringBuilder()
 				{
 					FailIfMissing = true,
@@ -30,6 +48,7 @@ namespace BingGalleryViewer.Utility.SQLite
 					UseUTF16Encoding = true,
 				};
 
+				// connect to the database file and initialize table.
 				using (var conn = new SQLiteConnection(builder.ToString()))
 				{
 					conn.Open();
@@ -38,6 +57,7 @@ namespace BingGalleryViewer.Utility.SQLite
 					{
 						try
 						{
+							// create table if none exists
 							cmd.CommandText = TableBingImage.GetTableCreationString();
 							cmd.ExecuteNonQuery();
 							transaction.Commit();
@@ -54,19 +74,40 @@ namespace BingGalleryViewer.Utility.SQLite
 			catch (ApplicationException e) { throw e; }
 			catch (Exception e) { throw new ApplicationException("Cannot create database at " + FilePath, e); }
 
+
 		}
 
+		// helper metho for sql param name passing
 		private static string param(string name) { return "@" + name; }
 
+		/// <summary>
+		/// database that this instance of datastore is associated with
+		/// </summary>
 		public readonly string StorageLocation;
+		/// <summary>
+		/// if this instance of the datastore allows writing/saving to database
+		/// </summary>
 		public readonly bool IsWriteable;
 
-
+		// database connection
 		private SQLiteConnection _connection = null;
+
+		/// <summary>
+		/// Check if the connection is opened with the database
+		/// </summary>
 		public bool IsConnected { get { return _connection != null; } }
 
+		/// <summary>
+		/// Construtor
+		/// </summary>
+		/// <param name="canWrite">set to true to write to database</param>
 		public Datastore(bool canWrite = false) : this(FilePath, canWrite) { }
 
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="filePath">database file location</param>
+		/// <param name="canWrite">set to true to write to database</param>
 		public Datastore(string filePath, bool canWrite = false)
 		{
 			if (!File.Exists(filePath)) throw new ArgumentException("File must exist");
@@ -74,10 +115,15 @@ namespace BingGalleryViewer.Utility.SQLite
 			this.IsWriteable = canWrite;
 		}
 
+		/// <summary>
+		/// Initialize datastore to connect to database
+		/// </summary>
+		/// <returns>awaitable task</returns>
 		private async Task InitializeAsync()
 		{
 			if (_connection == null)
 			{
+				// connect to datastore
 				var builder = new SQLiteConnectionStringBuilder()
 				{
 					FailIfMissing = true,
@@ -91,6 +137,7 @@ namespace BingGalleryViewer.Utility.SQLite
 			}
 		}
 
+		// sql cmd
 		private static readonly string SaveDatesCmdTxt =
 			string.Format("INSERT OR REPLACE INTO {0} VALUES ( {1}, {2}, {3}, {4}, {5});",
 				TableBingImage.TableDescription,
@@ -99,11 +146,17 @@ namespace BingGalleryViewer.Utility.SQLite
 				param(TableBingImage.UrlBaseName),
 				param(TableBingImage.CopyrightName),
 				param(TableBingImage.CopyrightLinkName));
+
+		/// <summary>
+		/// Save a range of image infos to datastore
+		/// </summary>
+		/// <param name="infos"></param>
+		/// <returns></returns>
 		public async Task<bool> SaveDatesAsync(BingImageInfo[] infos)
 		{
 			if (infos == null || infos.Length == 0) return false;
 			if (!IsWriteable) throw new InvalidOperationException("Datastore not open for write");
-			await InitializeAsync();
+			await InitializeAsync(); // ensure connection is open
 
 			try
 			{
@@ -136,7 +189,7 @@ namespace BingGalleryViewer.Utility.SQLite
 				}
 			}
 			catch (NullReferenceException e) { throw e; }
-			catch { }
+			catch { Trace.WriteLine("Exception occured at Datastore.SaveDatesAsync. " ); }
 			return false;
 
 		}
@@ -171,7 +224,7 @@ namespace BingGalleryViewer.Utility.SQLite
 				}
 			}
 			catch (NullReferenceException e) { throw e; }
-			catch (Exception){ }
+			catch { Trace.WriteLine("Exception occured at Datastore.SaveDatesAsync. "); }
 			return info;
 		}
 
@@ -208,7 +261,7 @@ namespace BingGalleryViewer.Utility.SQLite
 				}
 			}
 			catch (NullReferenceException e) { throw e; }
-			catch (Exception ) { }
+			catch { Trace.WriteLine("Exception occured at Datastore.SaveDatesAsync. "); }
 			return infos.ToArray();
 		}
 
@@ -232,7 +285,7 @@ namespace BingGalleryViewer.Utility.SQLite
 				}
 			}
 			catch (NullReferenceException e) { throw e; }
-			catch { }
+			catch { Trace.WriteLine("Exception occured at Datastore.SaveDatesAsync. "); }
 			return null;
 
 		}
@@ -257,7 +310,7 @@ namespace BingGalleryViewer.Utility.SQLite
 				}
 			}
 			catch (NullReferenceException e) { throw e; }
-			catch { }
+			catch { Trace.WriteLine("Exception occured at Datastore.SaveDatesAsync. "); }
 			return null;
 
 		}
@@ -281,17 +334,50 @@ namespace BingGalleryViewer.Utility.SQLite
 		}
 	}
 
+	/// <summary>
+	/// Schema for database.
+	/// </summary>
 	internal partial class Datastore
 	{
+		/// <summary>
+		/// table schema
+		/// </summary>
 		internal class TableBingImage
 		{
+			/// <summary>
+			/// table name
+			/// </summary>
 			public const string TableName = "table_bgv";
+			/// <summary>
+			/// column name
+			/// </summary>
 			public const string IdName = "startdate";
+			/// <summary>
+			/// column name
+			/// </summary>
 			public const string UrlName = "url";
+			/// <summary>
+			/// column name
+			/// </summary>
 			public const string UrlBaseName = "urlbase";
+			/// <summary>
+			/// column name
+			/// </summary>
 			public const string CopyrightName = "copyright";
+			/// <summary>
+			/// column name
+			/// </summary>
 			public const string CopyrightLinkName = "copyrightLink";
+
+			/// <summary>
+			/// SQL table description
+			/// </summary>
 			public static readonly string TableDescription = string.Format("{0} ({1}, {2}, {3}, {4}, {5})", TableName, IdName, UrlName, UrlBaseName, CopyrightName, CopyrightLinkName);
+
+			/// <summary>
+			/// get sql string for creating the sql table
+			/// </summary>
+			/// <returns>sql command string</returns>
 			public static string GetTableCreationString()
 			{
 				return "CREATE TABLE IF NOT EXISTS " + TableName + " ("

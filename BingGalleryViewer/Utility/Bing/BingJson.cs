@@ -7,31 +7,59 @@ using System.Threading.Tasks;
 
 namespace BingGalleryViewer.Utility.Bing
 {
+	/// <summary>
+	/// Bing's Json reply model
+	/// </summary>
 	[DataContract]
 	public class BingJson
 	{
+		/// <summary>
+		/// List of the image infos.
+		/// </summary>
 		[DataMember(IsRequired = true, Name = "images")]
 		public BingImageInfo[] Images { get; set; }
 	}
 
+	/// <summary>
+	/// Bing's daily image data.
+	/// </summary>
 	[DataContract]
 	public class BingImageInfo
 	{
+
+		/// <summary>
+		/// Date Image is released
+		/// </summary>
 		[DataMember(IsRequired = true, Name = "startdate")]
 		public string StartDate { get; set; }
 
+		/// <summary>
+		/// url to image
+		/// </summary>
 		[DataMember(IsRequired = true, Name = "url")]
 		public string Url { get; set; }
 
+		/// <summary>
+		/// host name
+		/// </summary>
 		[DataMember(IsRequired = true, Name = "urlbase")]
 		public string UrlBase { get; set; }
 
+		/// <summary>
+		/// Copyright flavor text
+		/// </summary>
 		[DataMember(IsRequired = true, Name = "copyright")]
 		public string Copyright { get; set; }
 
+		/// <summary>
+		/// Link to Bing description of the image 
+		/// </summary>
 		[DataMember(IsRequired = true, Name = "copyrightlink")]
 		public string CopyrightLink { get; set; }
 
+		/// <summary>
+		/// Compare image data for organizing the infos by their dates.
+		/// </summary>
 		public class Comparer : IComparer<BingImageInfo>
 		{
 
